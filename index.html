@@ -247,7 +247,7 @@ input[type=date],input[type=text]{font:inherit;color:var(--ink);background:var(-
       for (var d=1; d<=n; d++){
         var list=data[key(new Date(y,m,d))], e=null;
         if (list) for (var j=0;j<list.length;j++) if (list[j].t===t.id) e=list[j];
-        if (e){
+        if (e && e.n){
           if (last && last.n===(e.n||'') && last.end===d-1){ last.end=d; }
           else { last={t:t.id,n:e.n||'',from:d,end:d}; groups.push(last); }
         } else { last=null; }
@@ -255,13 +255,12 @@ input[type=date],input[type=text]{font:inherit;color:var(--ink);background:var(-
     });
     groups.sort(function(a,b){ return a.from-b.from || tIndex(a.t)-tIndex(b.t); });
     var box=$('list');
-    if (!groups.length){ box.innerHTML='<p class="empty">Aún no hay días marcados este mes. Toca un día para empezar.</p>'; return; }
+    if (!groups.length){ box.innerHTML='<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>'; return; }
     box.innerHTML = groups.map(function(g){
       var t=typeOf(g.t);
       var rango = g.from===g.end ? g.from+' de '+MESES[m] : g.from+' al '+g.end+' de '+MESES[m];
-      var title = g.n || t.name;
       var k = key(new Date(y,m,g.from));
-      return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span style="color:inherit"><b>'+esc(title)+'</b><span>'+esc(t.name)+' · '+rango+'</span></span></button>';
+      return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span style="color:inherit"><b>'+rango+'</b><span>'+esc(g.n)+'</span></span></button>';
     }).join('');
   }
 

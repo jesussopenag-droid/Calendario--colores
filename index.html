@@ -59,6 +59,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
 .day:nth-child(7n+6),.day:nth-child(7n){border:1.5px solid var(--line);border:1.5px solid color-mix(in srgb,var(--accent) 55%,transparent)}
 .day.has:nth-child(7n+6),.day.has:nth-child(7n){border-color:rgba(255,255,255,.6)}
 .day.out{opacity:.28}
+.day.past{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-skip-ink:none}
 .day.hoy{box-shadow:inset 0 0 0 2px var(--accent)}
 .day.has{box-shadow:0 6px 12px -6px rgba(0,0,0,.45)}
 .day.hoy.has{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent),0 6px 12px -6px rgba(0,0,0,.45)}
@@ -269,7 +270,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
       var k = key(d), list = getList(k); if (list) list = sortList(list);
       var mix = list && list.length>1;
-      var cls = 'day'+(d.getMonth()!==m?' out':'')+(k===todayK?' hoy':'')+(list?' has':'')+(mix?' mix':'');
+      var cls = 'day'+(d.getMonth()!==m?' out':'')+(k===todayK?' hoy':'')+(k<todayK?' past':'')+(list?' has':'')+(mix?' mix':'');
       var style='', note='', label = d.getDate()+' de '+MESES[d.getMonth()];
       if (list){
         var cols = list.map(function(e){ return typeOf(e.t).color; });
@@ -452,6 +453,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
   }catch(e){}
 
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js'); } catch(e){}
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
   renderLegend();
   render();
 })();

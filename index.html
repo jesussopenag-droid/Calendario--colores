@@ -198,7 +198,12 @@ input[type=date],input[type=text]{font:inherit;color:var(--ink);background:var(-
 
   $('week').innerHTML = DIAS.map(function(d){ return '<div>'+d+'</div>'; }).join('');
   function renderLegend(){
-    $('legend').innerHTML = TYPES.map(function(t){
+    var ly=cur.getFullYear(), lm=cur.getMonth(), ln=new Date(ly,lm+1,0).getDate(), used={};
+    for (var ld=1; ld<=ln; ld++){
+      var ll=data[key(new Date(ly,lm,ld))];
+      if (ll) ll.forEach(function(e){ used[e.t]=true; });
+    }
+    $('legend').innerHTML = TYPES.filter(function(t){ return used[t.id]; }).map(function(t){
       return '<span class="chip"><span class="dot" style="background:'+t.color+'"></span>'+esc(t.name)+'</span>';
     }).join('') + '<button class="chip" id="editColors">Editar colores</button>';
     $('editColors').addEventListener('click', openEditor);
@@ -236,6 +241,7 @@ input[type=date],input[type=text]{font:inherit;color:var(--ink);background:var(-
     }
     $('grid').innerHTML = html;
     renderList();
+    renderLegend();
   }
 
   function renderList(){

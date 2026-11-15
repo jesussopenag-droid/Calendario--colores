@@ -203,6 +203,34 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
   }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function has(o,k){ return Object.prototype.hasOwnProperty.call(o,k); }
+  var HOL = {
+    "2026-01-01":"Año Nuevo",
+    "2026-01-06":"Epifanía del Señor",
+    "2026-04-02":"Jueves Santo",
+    "2026-04-03":"Viernes Santo",
+    "2026-04-23":"San Jorge, Día de Aragón",
+    "2026-05-01":"Fiesta del Trabajo",
+    "2026-10-12":"Fiesta Nacional de España",
+    "2026-11-02":"Todos los Santos",
+    "2026-12-07":"Día de la Constitución",
+    "2026-12-08":"Inmaculada Concepción",
+    "2026-12-25":"Navidad",
+    "2027-01-01":"Año Nuevo",
+    "2027-01-06":"Epifanía del Señor",
+    "2027-03-25":"Jueves Santo",
+    "2027-03-26":"Viernes Santo",
+    "2027-04-23":"San Jorge, Día de Aragón",
+    "2027-08-16":"Asunción de la Virgen",
+    "2027-10-12":"Fiesta Nacional de España",
+    "2027-11-01":"Todos los Santos",
+    "2027-12-06":"Día de la Constitución",
+    "2027-12-08":"Inmaculada Concepción"
+  };
+  function getList(k){
+    var base = data[k] ? data[k].slice() : [];
+    if (HOL[k] && tIndex('fes')>=0 && !base.some(function(e){ return e.t==='fes'; })) base.push({t:'fes',n:HOL[k]});
+    return base.length ? base : null;
+  }
   function cleanDay(k){ // quita tipos que ya no existen
     if (!data[k]) return;
     data[k] = data[k].filter(function(e){ return tIndex(e.t)>=0; });
@@ -217,7 +245,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
   function renderLegend(){
     var ly=cur.getFullYear(), lm=cur.getMonth(), ln=new Date(ly,lm+1,0).getDate(), used={};
     for (var ld=1; ld<=ln; ld++){
-      var ll=data[key(new Date(ly,lm,ld))];
+      var ll=getList(key(new Date(ly,lm,ld)));
       if (ll) ll.forEach(function(e){ used[e.t]=true; });
     }
     $('legend').innerHTML = TYPES.filter(function(t){ return used[t.id]; }).map(function(t){
@@ -237,7 +265,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
     var html='';
     for (var i=0;i<42;i++){
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
-      var k = key(d), list = data[k] ? sortList(data[k]) : null;
+      var k = key(d), list = getList(k); if (list) list = sortList(list);
       var mix = list && list.length>1;
       var cls = 'day'+(d.getMonth()!==m?' out':'')+(k===todayK?' hoy':'')+(list?' has':'')+(mix?' mix':'');
       var style='', note='', label = d.getDate()+' de '+MESES[d.getMonth()];
@@ -268,7 +296,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
     TYPES.forEach(function(t){
       var last=null;
       for (var d=1; d<=n; d++){
-        var list=data[key(new Date(y,m,d))], e=null;
+        var list=getList(key(new Date(y,m,d))), e=null;
         if (list) for (var j=0;j<list.length;j++) if (list[j].t===t.id) e=list[j];
         if (e && e.n){
           if (last && last.n===(e.n||'') && last.end===d-1){ last.end=d; }

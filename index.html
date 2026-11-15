@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calendario">
+<meta name="theme-color" content="#1f6f78">
+<title>Mi Calendario de Colores</title>
+<link rel="icon" id="ico" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f6f78'/%3E%3Crect x='10' y='16' width='44' height='38' rx='6' fill='white'/%3E%3Crect x='10' y='16' width='44' height='10' rx='5' fill='%23e63946'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" id="touch" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Diseño: cabecera de mes grande, cuadrícula de días coloreados (varios colores por día), hojas inferiores para editar */
+  --bg:#f4f1ea; --surface:#ffffff; --ink:#1d2428; --muted:#66727a; --line:#e2ddd2; --accent:#1f6f78;
+  --font-display:'Fraunces',Georgia,serif; --font-body:'Nunito Sans',system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14191c; --surface:#1d2428; --ink:#eef1f2; --muted:#98a5ac; --line:#2c353a; --accent:#5fc3cc; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14191c; --surface:#1d2428; --ink:#eef1f2; --muted:#98a5ac; --line:#2c353a; --accent:#5fc3cc; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;touch-action:manipulation;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);overflow-x:hidden}
+.app{max-width:520px;margin:0 auto;padding:12px 16px 40px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-family:var(--font-display);font-weight:600;font-size:28px;margin:0;text-transform:capitalize;text-wrap:balance;line-height:1.1}
+h1 small{display:block;font-family:var(--font-body);font-size:14px;color:var(--muted);font-weight:600;margin-top:2px}
+.nav{display:flex;gap:6px}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.nav button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1}
+.nav button.hoy{width:auto;padding:0 12px;font-size:14px;font-weight:700}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.week,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.week div{text-align:center;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.day{aspect-ratio:1/1.05;border-radius:12px;border:1px solid var(--line);background-color:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:17px;font-weight:700;
+  font-variant-numeric:tabular-nums;padding:0;position:relative;overflow:hidden;
+  background-origin:border-box;background-clip:border-box;background-repeat:no-repeat}
+.day.out{opacity:.35}
+.day.hoy{box-shadow:0 0 0 3px var(--accent)}
+.day.has{border-color:transparent}
+.day.mix{text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.day .note{position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.9}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+button.chip{min-height:34px;border-style:dashed;color:var(--accent)}
+.dot{width:14px;height:14px;border-radius:5px;display:inline-block;flex:none}
+h2{font-family:var(--font-display);font-size:19px;margin:6px 0 2px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-align:left}
+.item .bar{width:6px;align-self:stretch;border-radius:4px}
+.item b{display:block}
+.item span{color:var(--muted);font-size:14px}
+.empty{color:var(--muted);font-size:15px}
+/* hojas de edición */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.scrim.on{display:flex}
+.sheet{background:var(--surface);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:92%;overflow:auto}
+.sheet h3{margin:0;font-family:var(--font-display);font-size:22px;text-transform:capitalize}
+.types{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);font-weight:700;text-align:left;min-width:0}
+.type .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.type[aria-pressed="true"]{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 1px var(--accent)}
+.type .tick{margin-left:auto;font-size:16px;color:var(--accent);visibility:hidden}
+.type[aria-pressed="true"] .tick{visibility:visible}
+.notas{display:flex;flex-direction:column;gap:10px}
+.notas label{flex-direction:row;align-items:center;gap:8px}
+.notas label span.n{flex:none;min-width:92px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:13px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+input[type=date],input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px;width:100%;min-height:46px}
+.actions{display:flex;gap:10px}
+.actions button{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-weight:700}
+.actions .ok{background:var(--accent);color:#fff;border-color:var(--accent)}
+:root[data-theme="dark"] .actions .ok{color:#0b1316}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .actions .ok{color:#0b1316}}
+.actions .del{color:#d62839}
+.hint{font-size:13px;color:var(--muted);margin:0}
+/* editor de colores */
+.te{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.te-top{display:flex;align-items:center;gap:10px}
+.te-top .dot{width:26px;height:26px;border-radius:8px}
+.te-top input{flex:1;min-width:0}
+.te-del{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;color:#d62839}
+.sw{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sw button{width:36px;height:36px;border-radius:10px;border:3px solid transparent;padding:0}
+.sw button[aria-pressed="true"]{border-color:var(--ink)}
+.sw .own{position:relative;width:auto;height:36px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.sw .own input{width:44px;height:36px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="titulo">Mes<small id="sub"></small></h1>
+    <div class="nav">
+      <button id="prev" aria-label="Mes anterior">‹</button>
+      <button id="hoy" class="hoy">Hoy</button>
+      <button id="next" aria-label="Mes siguiente">›</button>
+    </div>
+  </header>
+  <div class="week" id="week"></div>
+  <div class="grid" id="grid"></div>
+  <div class="legend" id="legend"></div>
+  <h2>Este mes</h2>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">Día</h3>
+    <p class="hint">Puedes elegir varios tipos a la vez. El día se verá con todos sus colores.</p>
+    <div class="types" id="types"></div>
+    <div class="notas" id="notas"></div>
+    <div class="row">
+      <label for="desde">Desde<input type="date" id="desde"></label>
+      <label for="hasta">Hasta<input type="date" id="hasta"></label>
+    </div>
+    <p class="hint">Para marcar varios días seguidos, cambia la fecha de «Hasta». En varios días, los tipos elegidos se añaden a lo que ya haya.</p>
+    <div class="actions">
+      <button id="cancel">Cancelar</button>
+      <button id="del" class="del">Quitar todo</button>
+      <button id="save" class="ok">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim2">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <h3 id="edTitle">Editar colores</h3>
+    <p class="hint">Cambia el nombre y el color de cada tipo. Los días ya marcados se actualizan solos.</p>
+    <div id="editor" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div class="actions">
+      <button id="addType">+ Añadir tipo</button>
+      <button id="doneEd" class="ok">Listo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var DEFAULT_TYPES = [
+    {id:'vac', name:'Vacaciones', color:'#1b9aaa'},
+    {id:'evt', name:'Evento',     color:'#f4a259'},
+    {id:'fes', name:'Festivo',    color:'#e63946'},
+    {id:'trb', name:'Trabajo',    color:'#4f6fb5'},
+    {id:'cum', name:'Cumpleaños', color:'#c13fa8'},
+    {id:'per', name:'Personal',   color:'#6aa84f'}
+  ];
+  var SWATCHES = ['#1b9aaa','#f4a259','#e63946','#4f6fb5','#c13fa8','#6aa84f','#f2c14e','#8d6e63','#14213d','#ff7eb6'];
+  var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var DIAS = ['L','M','X','J','V','S','D'];
+  var KEY = 'calendario-colores-v1', TKEY = 'calendario-tipos-v1';
+  var data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ data = {}; }
+  Object.keys(data).forEach(function(k){ if (!Array.isArray(data[k])) data[k] = [data[k]]; });
+  var TYPES = DEFAULT_TYPES.map(function(t){ return {id:t.id,name:t.name,color:t.color}; });
+  try {
+    var st = JSON.parse(localStorage.getItem(TKEY) || 'null');
+    if (Array.isArray(st) && st.length && st.every(function(t){ return t && t.id && t.name!=null && /^#[0-9a-fA-F]{6}$/.test(t.color); })) TYPES = st;
+  } catch(e){}
+  function persist(){ try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){} }
+  function persistTypes(){ try { localStorage.setItem(TKEY, JSON.stringify(TYPES)); } catch(e){} }
+
+  function tIndex(id){ for (var i=0;i<TYPES.length;i++) if (TYPES[i].id===id) return i; return -1; }
+  function typeOf(id){ var i=tIndex(id); return i<0 ? TYPES[0] : TYPES[i]; }
+  function sortList(l){ return l.slice().sort(function(a,b){ return tIndex(a.t)-tIndex(b.t); }); }
+  function pad(n){ return (n<10?'0':'')+n; }
+  function key(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function parse(k){ var p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function lum(hex){
+    var r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16);
+    return 0.299*r+0.587*g+0.114*b;
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function has(o,k){ return Object.prototype.hasOwnProperty.call(o,k); }
+  function cleanDay(k){ // quita tipos que ya no existen
+    if (!data[k]) return;
+    data[k] = data[k].filter(function(e){ return tIndex(e.t)>=0; });
+    if (!data[k].length) delete data[k];
+  }
+  Object.keys(data).forEach(cleanDay);
+
+  var cur = new Date(); cur.setDate(1);
+  var $ = function(id){ return document.getElementById(id); };
+
+  $('week').innerHTML = DIAS.map(function(d){ return '<div>'+d+'</div>'; }).join('');
+  function renderLegend(){
+    $('legend').innerHTML = TYPES.map(function(t){
+      return '<span class="chip"><span class="dot" style="background:'+t.color+'"></span>'+esc(t.name)+'</span>';
+    }).join('') + '<button class="chip" id="editColors">Editar colores</button>';
+    $('editColors').addEventListener('click', openEditor);
+  }
+
+  function render(){
+    var y=cur.getFullYear(), m=cur.getMonth();
+    $('titulo').firstChild.nodeValue = MESES[m];
+    $('sub').textContent = y;
+    var first = new Date(y,m,1);
+    var offset = (first.getDay()+6)%7;
+    var start = new Date(y,m,1-offset);
+    var todayK = key(new Date());
+    var html='';
+    for (var i=0;i<42;i++){
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+      var k = key(d), list = data[k] ? sortList(data[k]) : null;
+      var mix = list && list.length>1;
+      var cls = 'day'+(d.getMonth()!==m?' out':'')+(k===todayK?' hoy':'')+(list?' has':'')+(mix?' mix':'');
+      var style='', note='', label = d.getDate()+' de '+MESES[d.getMonth()];
+      if (list){
+        var cols = list.map(function(e){ return typeOf(e.t).color; });
+        var color = mix ? '#ffffff' : (lum(cols[0]) > 165 ? '#1d2428' : '#ffffff');
+        if (mix){
+          var step = 100/cols.length;
+          var g = cols.map(function(c,j){ return c+' '+(j*step)+'% '+((j+1)*step)+'%'; }).join(',');
+          style = ' style="background-image:linear-gradient(135deg,'+g+');color:'+color+'"';
+        } else {
+          style = ' style="background-color:'+cols[0]+';color:'+color+'"';
+        }
+        if (list.some(function(e){ return e.n; })) note='<i class="note"></i>';
+        label += ', ' + list.map(function(e){ return typeOf(e.t).name+(e.n?': '+e.n:''); }).join(' y ');
+      }
+      html += '<button class="'+cls+'" data-k="'+k+'"'+style+' aria-label="'+esc(label)+'">'+d.getDate()+note+'</button>';
+    }
+    $('grid').innerHTML = html;
+    renderList();
+  }
+
+  function renderList(){
+    var y=cur.getFullYear(), m=cur.getMonth();
+    var n = new Date(y,m+1,0).getDate();
+    var groups=[];
+    TYPES.forEach(function(t){
+      var last=null;
+      for (var d=1; d<=n; d++){
+        var list=data[key(new Date(y,m,d))], e=null;
+        if (list) for (var j=0;j<list.length;j++) if (list[j].t===t.id) e=list[j];
+        if (e){
+          if (last && last.n===(e.n||'') && last.end===d-1){ last.end=d; }
+          else { last={t:t.id,n:e.n||'',from:d,end:d}; groups.push(last); }
+        } else { last=null; }
+      }
+    });
+    groups.sort(function(a,b){ return a.from-b.from || tIndex(a.t)-tIndex(b.t); });
+    var box=$('list');
+    if (!groups.length){ box.innerHTML='<p class="empty">Aún no hay días marcados este mes. Toca un día para empezar.</p>'; return; }
+    box.innerHTML = groups.map(function(g){
+      var t=typeOf(g.t);
+      var rango = g.from===g.end ? g.from+' de '+MESES[m] : g.from+' al '+g.end+' de '+MESES[m];
+      var title = g.n || t.name;
+      var k = key(new Date(y,m,g.from));
+      return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span style="color:inherit"><b>'+esc(title)+'</b><span>'+esc(t.name)+' · '+rango+'</span></span></button>';
+    }).join('');
+  }
+
+  // hoja de edición de un día
+  var sel = {};
+  function drawTypes(){
+    $('types').innerHTML = TYPES.map(function(t){
+      var on = has(sel,t.id);
+      return '<button class="type" data-t="'+t.id+'" aria-pressed="'+on+'"><span class="dot" style="background:'+t.color+'"></span><span class="nm">'+esc(t.name)+'</span><span class="tick" aria-hidden="true">✓</span></button>';
+    }).join('');
+  }
+  function drawNotas(){
+    $('notas').innerHTML = TYPES.filter(function(t){ return has(sel,t.id); }).map(function(t){
+      return '<label for="n_'+t.id+'"><span class="n"><span class="dot" style="background:'+t.color+'"></span> '+esc(t.name)+'</span><input type="text" id="n_'+t.id+'" data-t="'+t.id+'" maxlength="60" placeholder="Nota (opcional)" value="'+esc(sel[t.id])+'"></label>';
+    }).join('');
+  }
+  function openSheet(k){
+    var d=parse(k);
+    sel = {};
+    (data[k]||[]).forEach(function(e){ sel[e.t]=e.n||''; });
+    $('sheetTitle').textContent = d.getDate()+' de '+MESES[d.getMonth()]+' de '+d.getFullYear();
+    $('desde').value=k; $('hasta').value=k;
+    $('del').style.display = data[k] ? '' : 'none';
+    drawTypes(); drawNotas();
+    $('scrim').classList.add('on');
+  }
+  function closeSheet(){ $('scrim').classList.remove('on'); }
+  function days(){
+    var a=$('desde').value, b=$('hasta').value || a, out=[];
+    if (!a) return out;
+    var da=parse(a), db=parse(b);
+    if (db<da){ var t=da; da=db; db=t; }
+    for (var i=0;i<366 && da<=db;i++){ out.push(key(da)); da=new Date(da.getFullYear(),da.getMonth(),da.getDate()+1); }
+    return out;
+  }
+  $('types').addEventListener('click',function(ev){
+    var b=ev.target.closest('.type'); if(!b) return;
+    var id=b.getAttribute('data-t');
+    if (has(sel,id)) delete sel[id]; else sel[id]='';
+    drawTypes(); drawNotas();
+  });
+  $('notas').addEventListener('input',function(ev){
+    var i=ev.target; if(i.getAttribute('data-t')) sel[i.getAttribute('data-t')] = i.value;
+  });
+  $('save').addEventListener('click',function(){
+    var ds = days(), single = ds.length===1;
+    ds.forEach(function(k){
+      var list = single ? [] : (data[k] || []).slice();
+      Object.keys(sel).forEach(function(id){
+        var n = (sel[id]||'').trim(), found=false;
+        for (var j=0;j<list.length;j++) if (list[j].t===id){ list[j]={t:id,n:n}; found=true; }
+        if (!found) list.push({t:id,n:n});
+      });
+      if (list.length) data[k]=sortList(list); else delete data[k];
+    });
+    persist(); closeSheet(); render();
+  });
+  $('del').addEventListener('click',function(){
+    days().forEach(function(k){ delete data[k]; });
+    persist(); closeSheet(); render();
+  });
+  $('cancel').addEventListener('click',closeSheet);
+  $('scrim').addEventListener('click',function(ev){ if(ev.target===$('scrim')) closeSheet(); });
+
+  // editor de colores y nombres
+  var armed = null;
+  function drawEditor(){
+    $('editor').innerHTML = TYPES.map(function(t){
+      var sw = SWATCHES.map(function(c){
+        return '<button data-id="'+t.id+'" data-c="'+c+'" style="background:'+c+'" aria-label="Color '+c+'" aria-pressed="'+(c.toLowerCase()===t.color.toLowerCase())+'"></button>';
+      }).join('');
+      var delTxt = armed===t.id ? '¿Seguro?' : 'Quitar';
+      return '<div class="te"><div class="te-top"><span class="dot" id="d_'+t.id+'" style="background:'+t.color+'"></span>'+
+        '<input type="text" class="te-name" data-id="'+t.id+'" maxlength="20" value="'+esc(t.name)+'" aria-label="Nombre del tipo">'+
+        (TYPES.length>1?'<button class="te-del" data-id="'+t.id+'">'+delTxt+'</button>':'')+'</div>'+
+        '<div class="sw">'+sw+'<label class="own">Otro<input type="color" data-id="'+t.id+'" value="'+t.color+'" aria-label="Elegir otro color"></label></div></div>';
+    }).join('');
+    $('addType').style.display = TYPES.length>=10 ? 'none' : '';
+  }
+  function openEditor(){ armed=null; drawEditor(); $('scrim2').classList.add('on'); }
+  function closeEditor(){
+    TYPES.forEach(function(t){ if(!t.name.trim()) t.name='Sin nombre'; });
+    persistTypes(); persist(); $('scrim2').classList.remove('on'); renderLegend(); render();
+  }
+  $('editor').addEventListener('input',function(ev){
+    var i=ev.target, id=i.getAttribute('data-id'); if(!id) return;
+    var t=TYPES[tIndex(id)]; if(!t) return;
+    if (i.classList.contains('te-name')) t.name=i.value;
+    else if (i.type==='color'){ t.color=i.value; $('d_'+id).style.background=i.value; }
+    persistTypes();
+  });
+  $('editor').addEventListener('click',function(ev){
+    var b=ev.target.closest('button'); if(!b) return;
+    var id=b.getAttribute('data-id'); if(!id) return;
+    if (b.hasAttribute('data-c')){ TYPES[tIndex(id)].color=b.getAttribute('data-c'); persistTypes(); drawEditor(); }
+    else if (b.classList.contains('te-del')){
+      if (armed!==id){ armed=id; drawEditor(); return; }
+      TYPES.splice(tIndex(id),1); armed=null;
+      Object.keys(data).forEach(cleanDay);
+      persistTypes(); persist(); drawEditor();
+    }
+  });
+  $('addType').addEventListener('click',function(){
+    var id='t'+Date.now().toString(36);
+    TYPES.push({id:id,name:'Nuevo tipo',color:SWATCHES[TYPES.length%SWATCHES.length]});
+    persistTypes(); drawEditor();
+  });
+  $('doneEd').addEventListener('click',closeEditor);
+  $('scrim2').addEventListener('click',function(ev){ if(ev.target===$('scrim2')) closeEditor(); });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ closeSheet(); if($('scrim2').classList.contains('on')) closeEditor(); } });
+
+  $('grid').addEventListener('click',function(ev){
+    var b=ev.target.closest('.day'); if(!b) return; openSheet(b.getAttribute('data-k'));
+  });
+  $('list').addEventListener('click',function(ev){
+    var b=ev.target.closest('.item'); if(!b) return; openSheet(b.getAttribute('data-k'));
+  });
+  $('prev').addEventListener('click',function(){ cur=new Date(cur.getFullYear(),cur.getMonth()-1,1); render(); });
+  $('next').addEventListener('click',function(){ cur=new Date(cur.getFullYear(),cur.getMonth()+1,1); render(); });
+  $('hoy').addEventListener('click',function(){ cur=new Date(); cur.setDate(1); render(); });
+
+  var sx=null;
+  $('grid').addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; },{passive:true});
+  $('grid').addEventListener('touchend',function(e){
+    if(sx===null) return; var dx=e.changedTouches[0].clientX-sx; sx=null;
+    if(Math.abs(dx)>70){ cur=new Date(cur.getFullYear(),cur.getMonth()+(dx<0?1:-1),1); render(); }
+  });
+
+  try{
+    var c=document.createElement('canvas'); c.width=c.height=180; var x=c.getContext('2d');
+    x.fillStyle='#1f6f78'; x.fillRect(0,0,180,180);
+    x.fillStyle='#fff'; x.beginPath(); x.roundRect(28,38,124,112,14); x.fill();
+    x.fillStyle='#e63946'; x.beginPath(); x.roundRect(28,38,124,30,[14,14,0,0]); x.fill();
+    var cols=['#1b9aaa','#f4a259','#e63946','#4f6fb5','#c13fa8','#6aa84f'];
+    for(var r=0;r<2;r++) for(var q=0;q<3;q++){ x.fillStyle=cols[r*3+q]; x.beginPath(); x.roundRect(42+q*34,82+r*30,26,22,5); x.fill(); }
+  }catch(e){}
+
+  try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js'); } catch(e){}
+  renderLegend();
+  render();
+})();
+</script>
+</body>
+</html>

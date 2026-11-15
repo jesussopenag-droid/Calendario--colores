@@ -37,13 +37,13 @@ body{background:radial-gradient(120% 55% at 50% -8%, var(--glow), transparent 65
   color:var(--ink);font-family:var(--font-body);font-size:16px;touch-action:manipulation;
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);overflow-x:hidden}
 .app{max-width:520px;margin:0 auto;padding:18px 16px 48px;display:flex;flex-direction:column;gap:16px}
-header{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:0 4px}
-h1{font-family:var(--font-display);font-weight:600;font-size:38px;margin:0;text-transform:capitalize;text-wrap:balance;line-height:1;letter-spacing:-.01em}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 8px;padding:0 4px}
+h1{font-family:var(--font-display);font-weight:600;font-size:clamp(30px,9vw,38px);margin:0;text-transform:capitalize;text-wrap:balance;line-height:1;letter-spacing:-.01em}
 h1 small{display:block;font-family:var(--font-body);font-size:13px;color:var(--accent);font-weight:700;margin-top:6px;letter-spacing:.22em}
-.nav{display:flex;gap:8px}
+.nav{display:flex;gap:8px;margin-left:auto}
 button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
-.nav button{width:44px;height:44px;border-radius:15px;border:0;background:var(--surface);font-size:22px;line-height:1;box-shadow:var(--shadow-sm);color:var(--ink)}
-.nav button.hoy{width:auto;padding:0 14px;font-size:14px;font-weight:700;color:var(--accent)}
+.nav button{width:42px;height:42px;border-radius:15px;border:0;background:var(--surface);font-size:22px;line-height:1;box-shadow:var(--shadow-sm);color:var(--ink)}
+.nav button.hoy{width:auto;padding:0 12px;font-size:14px;font-weight:700;color:var(--accent)}
 .nav button:active{transform:scale(.96)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .card{background:var(--surface);border-radius:28px;padding:16px 12px 14px;box-shadow:var(--shadow);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}

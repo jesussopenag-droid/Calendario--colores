@@ -274,13 +274,20 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       if (ll) ll.forEach(function(e){ used[e.t]=true; });
     }
     $('legend').innerHTML = TYPES.filter(function(t){ return used[t.id]; }).map(function(t){
-      var dotStyle = 'background:'+t.color;
+      var dotStyle = 'background:'+shown(t);
       if (t.id==='fes' && tIndex('vac')>=0) dotStyle = 'background:'+TYPES[tIndex('vac')].color+';box-shadow:inset 0 0 0 2.5px '+t.color;
       return '<span class="chip"><span class="dot" style="'+dotStyle+'"></span>'+esc(t.name)+'</span>';
     }).join('') + '<button class="chip" id="editColors">Editar colores</button>';
     $('editColors').addEventListener('click', openEditor);
   }
 
+  // Trabajo se ve en un gris suave con un toque de su color (si cambias el color, cambia el matiz)
+  function shown(t){
+    if (t.id!=='trb') return t.color;
+    var a=parseInt(t.color.slice(1),16), g=[188,197,203], r=0.18, out='#';
+    [a>>16,(a>>8)&255,a&255].forEach(function(v,i){ var x=Math.round(g[i]*(1-r)+v*r); out+=('0'+x.toString(16)).slice(-2); });
+    return out;
+  }
   function render(){
     var y=cur.getFullYear(), m=cur.getMonth();
     $('titulo').firstChild.nodeValue = MESES[m];
@@ -297,7 +304,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       if (list) list.forEach(function(e){
         var c;
         if (e.t==='fes' && fesIdx>=0){ isFes = true; c = vacIdx>=0 ? TYPES[vacIdx].color : TYPES[fesIdx].color; }
-        else c = typeOf(e.t).color;
+        else c = shown(typeOf(e.t));
         if (cols.indexOf(c)<0) cols.push(c);
       });
       var mix = cols.length>1;
@@ -345,7 +352,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var t=typeOf(g.t);
       var rango = g.from===g.end ? g.from+' de '+MESES[m] : g.from+' al '+g.end+' de '+MESES[m];
       var k = key(new Date(y,m,g.from));
-      return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span class="txt"><b>'+rango+'</b><span class="nt">'+esc(g.n)+'</span></span></button>';
+      return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+shown(t)+'"></span><span class="txt"><b>'+rango+'</b><span class="nt">'+esc(g.n)+'</span></span></button>';
     }
     if (!groups.length){ box.innerHTML='<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>'; return; }
     var orden=TYPES.map(function(t){ return t.id; }).filter(function(id){ return id!=='fes'; });
@@ -355,9 +362,9 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var gs=groups.filter(function(g){ return g.t===id; });
       if (!gs.length) return;
       var t=typeOf(id);
-      var rgb=parseInt(t.color.slice(1),16), lum=(0.299*(rgb>>16)+0.587*((rgb>>8)&255)+0.114*(rgb&255));
+      var sc=shown(t), rgb=parseInt(sc.slice(1),16), lum=(0.299*(rgb>>16)+0.587*((rgb>>8)&255)+0.114*(rgb&255));
       var tx = lum>165 ? '#1b2428' : '#fff';
-      html += '<details class="fdet" data-t="'+id+'"'+(abiertos[id]?' open':'')+' style="--c:'+t.color+';--tx:'+tx+'"><summary><span class="tab"><span class="dot"></span>'+esc(t.name)+'</span><span class="strip"><em>'+gs.length+(gs.length===1?' día apuntado':' apuntados')+'</em><i>▾</i></span></summary><div class="list">'+gs.map(item).join('')+'</div></details>';
+      html += '<details class="fdet" data-t="'+id+'"'+(abiertos[id]?' open':'')+' style="--c:'+sc+';--tx:'+tx+'"><summary><span class="tab"><span class="dot"></span>'+esc(t.name)+'</span><span class="strip"><em>'+gs.length+(gs.length===1?' día apuntado':' apuntados')+'</em><i>▾</i></span></summary><div class="list">'+gs.map(item).join('')+'</div></details>';
     });
     box.innerHTML = html;
     Array.prototype.forEach.call(box.querySelectorAll('.fdet'), function(det){

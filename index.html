@@ -80,13 +80,18 @@ h2{font-family:var(--font-body);font-size:12px;font-weight:800;text-transform:up
 .item .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .item .txt b{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 .item .txt .nt{font-size:17px;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
-.fdet{background:var(--surface);border-radius:10px;box-shadow:var(--shadow-sm);overflow:hidden}
-.fdet summary{display:flex;align-items:center;gap:10px;padding:14px;font-weight:800;font-size:16px;cursor:pointer;list-style:none}
+/* archivador: pestaña de color + lomo; al abrir se ve el contenido dentro de la carpeta */
+.fdet{--c:#888;--tx:#fff;margin-top:4px;filter:drop-shadow(0 6px 8px rgba(24,52,60,.18))}
+.fdet summary{display:block;list-style:none;cursor:pointer;padding:0}
 .fdet summary::-webkit-details-marker{display:none}
-.fdet summary em{margin-left:auto;font-style:normal;font-size:13px;color:var(--muted)}
-.fdet summary::after{content:"▾";color:var(--muted);transition:transform .2s}
-.fdet[open] summary::after{transform:rotate(180deg)}
-.fdet .list{padding:0 10px 12px}
+.fdet .tab{display:inline-flex;align-items:center;gap:8px;background:var(--c);color:var(--tx);font-weight:800;font-size:15px;padding:8px 18px 7px 14px;border-radius:12px 18px 0 0;margin-left:6px;position:relative}
+.fdet .tab .dot{background:var(--tx);opacity:.85;width:8px;height:8px}
+.fdet .strip{display:flex;align-items:center;justify-content:space-between;background:var(--c);color:var(--tx);border-radius:12px 12px 12px 12px;padding:9px 14px;font-weight:700;font-size:13px}
+.fdet .strip em{font-style:normal;opacity:.9}
+.fdet .strip i{font-style:normal;transition:transform .2s;display:inline-block;margin-left:10px}
+.fdet[open] .strip i{transform:rotate(180deg)}
+.fdet[open] .strip{border-radius:12px 12px 0 0}
+.fdet .list{background:var(--surface);border:3px solid var(--c);border-top:0;border-radius:0 0 12px 12px;padding:12px 10px}
 .fdet .item{box-shadow:none;background:var(--bg)}
 .empty{color:var(--muted);font-size:15px;margin:0 4px;text-wrap:balance}
 /* hojas de edición */
@@ -202,6 +207,12 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
     var st = JSON.parse(localStorage.getItem(TKEY) || 'null');
     if (Array.isArray(st) && st.length && st.every(function(t){ return t && t.id && t.name!=null && /^#[0-9a-fA-F]{6}$/.test(t.color); })) TYPES = st;
   } catch(e){}
+  // Festivo es obligatorio: si se borró, se restaura (los festivos incluidos siguen ahí)
+  if (!TYPES.some(function(t){ return t.id==='fes'; })){
+    var fd = DEFAULT_TYPES.filter(function(t){ return t.id==='fes'; })[0];
+    TYPES.push({id:fd.id,name:fd.name,color:fd.color});
+    try { localStorage.setItem(TKEY, JSON.stringify(TYPES)); } catch(e){}
+  }
   function persist(){ try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){} }
   function persistTypes(){ try { localStorage.setItem(TKEY, JSON.stringify(TYPES)); } catch(e){} }
 
@@ -344,7 +355,9 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var gs=groups.filter(function(g){ return g.t===id; });
       if (!gs.length) return;
       var t=typeOf(id);
-      html += '<details class="fdet" data-t="'+id+'"'+(abiertos[id]?' open':'')+'><summary><span class="dot" style="background:'+t.color+'"></span>'+esc(t.name)+' <em>'+gs.length+'</em></summary><div class="list">'+gs.map(item).join('')+'</div></details>';
+      var rgb=parseInt(t.color.slice(1),16), lum=(0.299*(rgb>>16)+0.587*((rgb>>8)&255)+0.114*(rgb&255));
+      var tx = lum>165 ? '#1b2428' : '#fff';
+      html += '<details class="fdet" data-t="'+id+'"'+(abiertos[id]?' open':'')+' style="--c:'+t.color+';--tx:'+tx+'"><summary><span class="tab"><span class="dot"></span>'+esc(t.name)+'</span><span class="strip"><em>'+gs.length+(gs.length===1?' día apuntado':' apuntados')+'</em><i>▾</i></span></summary><div class="list">'+gs.map(item).join('')+'</div></details>';
     });
     box.innerHTML = html;
     Array.prototype.forEach.call(box.querySelectorAll('.fdet'), function(det){
@@ -424,7 +437,7 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var delTxt = armed===t.id ? '¿Seguro?' : 'Quitar';
       return '<div class="te"><div class="te-top"><span class="dot" id="d_'+t.id+'" style="background:'+t.color+'"></span>'+
         '<input type="text" class="te-name" data-id="'+t.id+'" maxlength="20" value="'+esc(t.name)+'" aria-label="Nombre del tipo">'+
-        (TYPES.length>1?'<button class="te-del" data-id="'+t.id+'">'+delTxt+'</button>':'')+'</div>'+
+        (TYPES.length>1&&t.id!=='fes'?'<button class="te-del" data-id="'+t.id+'">'+delTxt+'</button>':'')+'</div>'+
         '<div class="sw">'+sw+'<label class="own">Otro<input type="color" data-id="'+t.id+'" value="'+t.color+'" aria-label="Elegir otro color"></label></div></div>';
     }).join('');
     $('addType').style.display = TYPES.length>=10 ? 'none' : '';

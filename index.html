@@ -336,20 +336,22 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
       var k = key(new Date(y,m,g.from));
       return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span class="txt"><b>'+rango+'</b><span class="nt">'+esc(g.n)+'</span></span></button>';
     }
-    var propios=groups.filter(function(g){ return g.t!=='fes'; });
-    var fest=groups.filter(function(g){ return g.t==='fes'; });
+    if (!groups.length){ box.innerHTML='<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>'; return; }
+    var orden=TYPES.map(function(t){ return t.id; }).filter(function(id){ return id!=='fes'; });
+    if (tIndex('fes')>=0) orden.push('fes');
     var html='';
-    if (propios.length) html += propios.map(item).join('');
-    else html += '<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>';
-    if (fest.length){
-      var ft=typeOf('fes');
-      html += '<details class="fdet"'+(fesOpen?' open':'')+'><summary><span class="dot" style="background:'+ft.color+'"></span>'+esc(ft.name)+'s <em>'+fest.length+'</em></summary><div class="list">'+fest.map(item).join('')+'</div></details>';
-    }
+    orden.forEach(function(id){
+      var gs=groups.filter(function(g){ return g.t===id; });
+      if (!gs.length) return;
+      var t=typeOf(id);
+      html += '<details class="fdet" data-t="'+id+'"'+(abiertos[id]?' open':'')+'><summary><span class="dot" style="background:'+t.color+'"></span>'+esc(t.name)+' <em>'+gs.length+'</em></summary><div class="list">'+gs.map(item).join('')+'</div></details>';
+    });
     box.innerHTML = html;
-    var det=box.querySelector('.fdet');
-    if (det) det.addEventListener('toggle',function(){ fesOpen=det.open; });
+    Array.prototype.forEach.call(box.querySelectorAll('.fdet'), function(det){
+      det.addEventListener('toggle',function(){ abiertos[det.getAttribute('data-t')]=det.open; });
+    });
   }
-  var fesOpen=false;
+  var abiertos={};
 
   // hoja de edición de un día
   var sel = {};

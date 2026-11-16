@@ -16,7 +16,7 @@
 <style>
 :root{
   /* Diseño: fondo con brillo suave, calendario en tarjeta, días sin marco; los marcados se rellenan de color con sombra suave */
-  --bg:#f3efe6; --glow:#cfe8e9; --surface:#ffffff; --ink:#1b2428; --muted:#6a767d; --line:#e6e0d3; --accent:#1f6f78;
+  --bg:#e9eef0; --glow:#cfe8e9; --surface:#ffffff; --ink:#1b2428; --muted:#6a767d; --line:#d3dadd; --accent:#1f6f78;
   --shadow:0 14px 34px -18px rgba(24,52,60,.35); --shadow-sm:0 6px 16px -10px rgba(24,52,60,.35);
   --font-display:'Fraunces',Georgia,serif; --font-body:'Nunito Sans',system-ui,sans-serif;
   color-scheme:light;
@@ -33,7 +33,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%}
-body{background:radial-gradient(120% 55% at 50% -8%, var(--glow), transparent 65%), var(--bg);background-attachment:fixed;
+body{background:var(--bg);
   color:var(--ink);font-family:var(--font-body);font-size:16px;touch-action:manipulation;
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);overflow-x:hidden}
 .app{max-width:560px;margin:0 auto;padding:18px 10px 48px;display:flex;flex-direction:column;gap:16px}
@@ -80,9 +80,17 @@ h2{font-family:var(--font-body);font-size:12px;font-weight:800;text-transform:up
 .item .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .item .txt b{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 .item .txt .nt{font-size:17px;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.fdet{background:var(--surface);border-radius:10px;box-shadow:var(--shadow-sm);overflow:hidden}
+.fdet summary{display:flex;align-items:center;gap:10px;padding:14px;font-weight:800;font-size:16px;cursor:pointer;list-style:none}
+.fdet summary::-webkit-details-marker{display:none}
+.fdet summary em{margin-left:auto;font-style:normal;font-size:13px;color:var(--muted)}
+.fdet summary::after{content:"▾";color:var(--muted);transition:transform .2s}
+.fdet[open] summary::after{transform:rotate(180deg)}
+.fdet .list{padding:0 10px 12px}
+.fdet .item{box-shadow:none;background:var(--bg)}
 .empty{color:var(--muted);font-size:15px;margin:0 4px;text-wrap:balance}
 /* hojas de edición */
-.scrim{position:fixed;inset:0;background:rgba(10,20,24,.5);display:none;align-items:flex-end;justify-content:center;z-index:10;backdrop-filter:blur(3px)}
+.scrim{position:fixed;inset:0;background:rgba(10,20,24,.5);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .scrim.on{display:flex}
 .sheet{background:var(--surface);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:12px 18px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:92%;overflow:auto;box-shadow:0 -20px 50px -20px rgba(0,0,0,.5)}
 .sheet::before{content:"";width:42px;height:5px;border-radius:3px;background:var(--line);align-self:center;margin-bottom:2px;flex:none}
@@ -322,14 +330,26 @@ input[type=date]:focus,input[type=text]:focus{border-color:var(--accent);outline
     });
     groups.sort(function(a,b){ return a.from-b.from || tIndex(a.t)-tIndex(b.t); });
     var box=$('list');
-    if (!groups.length){ box.innerHTML='<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>'; return; }
-    box.innerHTML = groups.map(function(g){
+    function item(g){
       var t=typeOf(g.t);
       var rango = g.from===g.end ? g.from+' de '+MESES[m] : g.from+' al '+g.end+' de '+MESES[m];
       var k = key(new Date(y,m,g.from));
       return '<button class="item" data-k="'+k+'"><span class="bar" style="background:'+t.color+'"></span><span class="txt"><b>'+rango+'</b><span class="nt">'+esc(g.n)+'</span></span></button>';
-    }).join('');
+    }
+    var propios=groups.filter(function(g){ return g.t!=='fes'; });
+    var fest=groups.filter(function(g){ return g.t==='fes'; });
+    var html='';
+    if (propios.length) html += propios.map(item).join('');
+    else html += '<p class="empty">No hay notas escritas este mes. Toca un día y escribe una nota para que aparezca aquí.</p>';
+    if (fest.length){
+      var ft=typeOf('fes');
+      html += '<details class="fdet"'+(fesOpen?' open':'')+'><summary><span class="dot" style="background:'+ft.color+'"></span>'+esc(ft.name)+'s <em>'+fest.length+'</em></summary><div class="list">'+fest.map(item).join('')+'</div></details>';
+    }
+    box.innerHTML = html;
+    var det=box.querySelector('.fdet');
+    if (det) det.addEventListener('toggle',function(){ fesOpen=det.open; });
   }
+  var fesOpen=false;
 
   // hoja de edición de un día
   var sel = {};
